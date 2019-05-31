@@ -21,40 +21,42 @@
 
 #pragma once
 
-#include <string>
-#include <map>
 #include <clang/Basic/SourceLocation.h>
+#include <map>
+#include <string>
 
 class Annotator;
 namespace clang {
 class Preprocessor;
 class Sema;
-}
+} // namespace clang
 
 class Generator;
 
 class CommentHandler {
-    struct CommentVisitor;
+  struct CommentVisitor;
+
 public:
+  struct Doc {
+    std::string content;
+    clang::SourceLocation loc;
+  };
 
-    struct Doc {
-        std::string content;
-        clang::SourceLocation loc;
-    };
+  std::multimap<std::string, Doc> docs;
 
-    std::multimap<std::string, Doc> docs;
+  // fileId -> [ref, global_visibility]
+  std::multimap<clang::SourceLocation, std::pair<std::string, bool>>
+      decl_offsets;
 
-    // fileId -> [ref, global_visibility]
-    std::multimap<clang::SourceLocation, std::pair<std::string, bool>> decl_offsets;
-
-    /**
-     * Handle the comment startig at @a commentstart within @a bufferStart with length @a len.
-     * Search for corresponding declaration in the given source location interval
-     * @a commentLoc is the position of the comment
-     */
-    void handleComment(Annotator &A, Generator& generator, clang::Sema& Sema,
-                       const char* bufferStart, int commentStart, int len,
-                       clang::SourceLocation searchLocBegin, clang::SourceLocation searchLocEnd,
-                       clang::SourceLocation commentLoc);
-
+  /**
+   * Handle the comment startig at @a commentstart within @a bufferStart with
+   * length @a len. Search for corresponding declaration in the given source
+   * location interval
+   * @a commentLoc is the position of the comment
+   */
+  void handleComment(Annotator &A, Generator &generator, clang::Sema &Sema,
+                     const char *bufferStart, int commentStart, int len,
+                     clang::SourceLocation searchLocBegin,
+                     clang::SourceLocation searchLocEnd,
+                     clang::SourceLocation commentLoc);
 };

@@ -19,12 +19,11 @@
  * purchasing a commercial licence.
  ****************************************************************************/
 
-
 #pragma once
-#include <clang/Lex/PPCallbacks.h>
-#include <clang/Lex/MacroInfo.h>
-#include <clang/Basic/Version.h>
 #include <clang/AST/Decl.h>
+#include <clang/Basic/Version.h>
+#include <clang/Lex/MacroInfo.h>
+#include <clang/Lex/PPCallbacks.h>
 
 namespace clang {
 class Preprocessor;
@@ -32,70 +31,99 @@ class Preprocessor;
 
 class Annotator;
 
-class PreprocessorCallback  : public clang::PPCallbacks {
-    Annotator &annotator;
-    clang::Preprocessor &PP;
-    bool disabled = false; // To prevent recurstion
-    bool seenPragma = false; // To detect _Pragma in expansion
-    bool recoverIncludePath; // If we should try to find the include paths harder
+class PreprocessorCallback : public clang::PPCallbacks {
+  Annotator &annotator;
+  clang::Preprocessor &PP;
+  bool disabled = false;   // To prevent recurstion
+  bool seenPragma = false; // To detect _Pragma in expansion
+  bool recoverIncludePath; // If we should try to find the include paths harder
 
 public:
-    PreprocessorCallback(Annotator &fm, clang::Preprocessor &PP, bool recoverIncludePath)
-        : annotator(fm), PP(PP), recoverIncludePath(recoverIncludePath) {}
+  PreprocessorCallback(Annotator &fm, clang::Preprocessor &PP,
+                       bool recoverIncludePath)
+      : annotator(fm), PP(PP), recoverIncludePath(recoverIncludePath) {}
 
 #if CLANG_VERSION_MAJOR != 3 || CLANG_VERSION_MINOR >= 7
-    using MyMacroDefinition = const clang::MacroDefinition &;
+  using MyMacroDefinition = const clang::MacroDefinition &;
 #else
-    using MyMacroDefinition = const clang::MacroDirective*;
+  using MyMacroDefinition = const clang::MacroDirective *;
 #endif
 
-    void MacroExpands(const clang::Token& MacroNameTok, MyMacroDefinition MD,
-                      clang::SourceRange Range, const clang::MacroArgs *Args) override;
+  void MacroExpands(const clang::Token &MacroNameTok, MyMacroDefinition MD,
+                    clang::SourceRange Range,
+                    const clang::MacroArgs *Args) override;
 
-    void MacroDefined(const clang::Token &MacroNameTok, const clang::MacroDirective *MD) override;
+  void MacroDefined(const clang::Token &MacroNameTok,
+                    const clang::MacroDirective *MD) override;
 
-    void MacroUndefined(const clang::Token &MacroNameTok, MyMacroDefinition MD
+  void MacroUndefined(const clang::Token &MacroNameTok, MyMacroDefinition MD
 #if CLANG_VERSION_MAJOR >= 5
-       , const clang::MacroDirective *
+                      ,
+                      const clang::MacroDirective *
 #endif
-        ) override;
+                      ) override;
 
-    bool FileNotFound(llvm::StringRef FileName, llvm::SmallVectorImpl<char> &RecoveryPath) override;
-    void InclusionDirective(clang::SourceLocation HashLoc, const clang::Token& IncludeTok, llvm::StringRef FileName,
-                            bool IsAngled, clang::CharSourceRange FilenameRange, const clang::FileEntry* File,
-                            llvm::StringRef SearchPath, llvm::StringRef RelativePath, const clang::Module* Imported
+  bool FileNotFound(llvm::StringRef FileName,
+                    llvm::SmallVectorImpl<char> &RecoveryPath) override;
+  void
+  InclusionDirective(clang::SourceLocation HashLoc,
+                     const clang::Token &IncludeTok, llvm::StringRef FileName,
+                     bool IsAngled, clang::CharSourceRange FilenameRange,
+                     const clang::FileEntry *File, llvm::StringRef SearchPath,
+                     llvm::StringRef RelativePath, const clang::Module *Imported
 #if CLANG_VERSION_MAJOR >= 7
-                            , clang::SrcMgr::CharacteristicKind
+                     ,
+                     clang::SrcMgr::CharacteristicKind
 #endif
 
-    ) override;
+                     ) override;
 
 #if CLANG_VERSION_MAJOR == 3 && CLANG_VERSION_MINOR < 5
-    typedef bool ConditionValueKind;  // It's an enum in clang 3.5
+  typedef bool ConditionValueKind; // It's an enum in clang 3.5
 #endif
 
-    void PragmaDirective(clang::SourceLocation Loc, clang::PragmaIntroducerKind Introducer) override
-    { seenPragma = true; }
+  void PragmaDirective(clang::SourceLocation Loc,
+                       clang::PragmaIntroducerKind Introducer) override {
+    seenPragma = true;
+  }
 
-    virtual void If(clang::SourceLocation Loc, clang::SourceRange ConditionRange, ConditionValueKind ConditionValue) override
-    { HandlePPCond(Loc, Loc); }
-    virtual void Ifndef(clang::SourceLocation Loc, const clang::Token& MacroNameTok, MyMacroDefinition MD) override
-    { HandlePPCond(Loc, Loc); Defined(MacroNameTok, MD, Loc); }
-    virtual void Ifdef(clang::SourceLocation Loc, const clang::Token& MacroNameTok, MyMacroDefinition MD) override
-    { HandlePPCond(Loc, Loc); Defined(MacroNameTok, MD, Loc); }
-    virtual void Elif(clang::SourceLocation Loc, clang::SourceRange ConditionRange, ConditionValueKind ConditionValue, clang::SourceLocation IfLoc) override {
-        ElifMapping[Loc] = IfLoc;
-        HandlePPCond(Loc, IfLoc);
-    }
-    virtual void Else(clang::SourceLocation Loc, clang::SourceLocation IfLoc) override
-    { HandlePPCond(Loc, IfLoc); }
-    virtual void Endif(clang::SourceLocation Loc, clang::SourceLocation IfLoc) override
-    { HandlePPCond(Loc, IfLoc); }
+  virtual void If(clang::SourceLocation Loc, clang::SourceRange ConditionRange,
+                  ConditionValueKind ConditionValue) override {
+    HandlePPCond(Loc, Loc);
+  }
+  virtual void Ifndef(clang::SourceLocation Loc,
+                      const clang::Token &MacroNameTok,
+                      MyMacroDefinition MD) override {
+    HandlePPCond(Loc, Loc);
+    Defined(MacroNameTok, MD, Loc);
+  }
+  virtual void Ifdef(clang::SourceLocation Loc,
+                     const clang::Token &MacroNameTok,
+                     MyMacroDefinition MD) override {
+    HandlePPCond(Loc, Loc);
+    Defined(MacroNameTok, MD, Loc);
+  }
+  virtual void Elif(clang::SourceLocation Loc,
+                    clang::SourceRange ConditionRange,
+                    ConditionValueKind ConditionValue,
+                    clang::SourceLocation IfLoc) override {
+    ElifMapping[Loc] = IfLoc;
+    HandlePPCond(Loc, IfLoc);
+  }
+  virtual void Else(clang::SourceLocation Loc,
+                    clang::SourceLocation IfLoc) override {
+    HandlePPCond(Loc, IfLoc);
+  }
+  virtual void Endif(clang::SourceLocation Loc,
+                     clang::SourceLocation IfLoc) override {
+    HandlePPCond(Loc, IfLoc);
+  }
 
-    virtual void Defined(const clang::Token &MacroNameTok, MyMacroDefinition MD,
-                         clang::SourceRange Range) override;
+  virtual void Defined(const clang::Token &MacroNameTok, MyMacroDefinition MD,
+                       clang::SourceRange Range) override;
 
 private:
-    std::map<clang::SourceLocation, clang::SourceLocation> ElifMapping;     // Map an elif location to the real if;
-    void HandlePPCond(clang::SourceLocation Loc, clang::SourceLocation IfLoc);
+  std::map<clang::SourceLocation, clang::SourceLocation>
+      ElifMapping; // Map an elif location to the real if;
+  void HandlePPCond(clang::SourceLocation Loc, clang::SourceLocation IfLoc);
 };

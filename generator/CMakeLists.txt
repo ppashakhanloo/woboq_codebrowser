@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.1)
-project(codebrowser_generator)
+project(generator)
 
-Find_Package(LLVM REQUIRED CONFIG)
+Find_Package(LLVM 7.1.0 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} in ${LLVM_INSTALL_PREFIX}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 Find_Package(Clang REQUIRED CONFIG HINTS "${LLVM_INSTALL_PREFIX}/lib/cmake/clang")
 message(STATUS "Found Clang in ${CLANG_INSTALL_PREFIX}")
 
-add_executable(codebrowser_generator main.cpp projectmanager.cpp annotator.cpp generator.cpp preprocessorcallback.cpp
+add_executable(generator main.cpp projectmanager.cpp annotator.cpp generator.cpp preprocessorcallback.cpp
                filesystem.cpp qtsupport.cpp commenthandler.cpp ${CMAKE_CURRENT_BINARY_DIR}/projectmanager_systemprojects.cpp)
 
-target_include_directories(codebrowser_generator PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
+target_include_directories(generator PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
 
-target_link_libraries(codebrowser_generator PRIVATE
+target_link_libraries(generator PRIVATE
   clangFrontend
   clangParse
   clangSema
@@ -23,17 +23,17 @@ target_link_libraries(codebrowser_generator PRIVATE
 )
 
 if(TARGET LLVM)
-  target_link_libraries(codebrowser_generator PRIVATE LLVM)
+  target_link_libraries(generator PRIVATE LLVM)
 else()
   # We cannot use llvm_config() here because in some versions it uses PRIVATE when calling target_link_libraries
   # and in some it doesn't. If our calls of target_link_libraries don't do it the same way, we get a
   # fatal error.
   llvm_map_components_to_libnames(llvm_libs core support)
-  target_link_libraries(codebrowser_generator PRIVATE ${llvm_libs})
+  target_link_libraries(generator PRIVATE ${llvm_libs})
 endif()
 
-install(TARGETS codebrowser_generator RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-target_include_directories(codebrowser_generator PUBLIC ${CLANG_INCLUDE_DIRS})
+install(TARGETS generator RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+target_include_directories(generator PUBLIC ${CLANG_INCLUDE_DIRS})
 
 set (CMAKE_CXX_STANDARD 11)
 
@@ -88,4 +88,4 @@ endforeach()
 endif()
 
 configure_file(embedded_includes.h.in embedded_includes.h)
-target_include_directories(codebrowser_generator PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(generator PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

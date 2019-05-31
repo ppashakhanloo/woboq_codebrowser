@@ -26,9 +26,8 @@ class CallExpr;
 class NamedDecl;
 class Expr;
 class CXXConstructExpr;
-}
+} // namespace clang
 class Annotator;
-
 
 /**
  * Handle the SIGNAL and SLOT macro within calls to QObject::connect or the like
@@ -36,13 +35,13 @@ class Annotator;
  * Recognize calls to QObject::connect,  QObject::disconnect, QTimer::singleShot
  */
 struct QtSupport {
-    Annotator &annotator;
-    clang::NamedDecl *currentContext;
+  Annotator &annotator;
+  clang::NamedDecl *currentContext;
 
-    void visitCallExpr(clang::CallExpr *e);
-    void visitCXXConstructExpr(clang::CXXConstructExpr* e);
+  void visitCallExpr(clang::CallExpr *e);
+  void visitCXXConstructExpr(clang::CXXConstructExpr *e);
 
 private:
-    void handleSignalOrSlot(clang::Expr *obj, clang::Expr *method);
-    void handleInvokeMethod(clang::Expr *obj, clang::Expr *method);
+  void handleSignalOrSlot(clang::Expr *obj, clang::Expr *method);
+  void handleInvokeMethod(clang::Expr *obj, clang::Expr *method);
 };
